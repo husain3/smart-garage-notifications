@@ -1,0 +1,30 @@
+version: 0.2
+
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      python: 3.8
+    commands:
+      - echo "Starting install phase... "
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo "Starting pre_build phase"
+      - echo "Running unittests"
+      - python3 -m unittests discover tests/unittests
+  build:
+    on-failure: ABORT
+    commands:
+      - echo "Starting SAM build phase"
+      - sam package --template-file template.yaml --region us-west-2 --s3-bucket smart-garage-notifications-sourcecode --s3-prefix smart-garage-notifications-sourcecode/lambda-code --output-template-file packaged.yaml
+  post_build:
+    on-failure: ABORT
+    commands:
+      - echo "Starting post_build"
+
+artifacts:
+  files:
+    - packaged.yaml
+  discard-paths: yes
