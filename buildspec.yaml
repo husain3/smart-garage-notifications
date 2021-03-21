@@ -8,6 +8,7 @@ phases:
       python: 3.8
     commands:
       - echo "Starting install phase... "
+      - python3 -m pip install -r hello_world/requirements.txt
   pre_build:
     on-failure: ABORT
     commands:
