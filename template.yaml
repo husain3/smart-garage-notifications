@@ -5,12 +5,38 @@ Description: >
 
   Sample SAM Template for smart-garage-notifications
 
+Parameters:
+  ENVIRONMENT:
+    Type: String
+    Default: PreProduction
+    AllowedValues:
+      - PreProduction
+      - Production
+    Description: The stages based on CI/CD Pipeline in CodePipeline
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 3
 
 Resources:
+  SmartGarageNotification:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub SmartGarageNotificationApi-${ENVIRONMENT}
+      StageName: !Sub ${ENVIRONMENT}
+      Auth:
+        ApiKeyRequired: True
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          UsagePlanName: SmartGarageNotificationApiUsagePlan
+          Quota:
+            Limit: 50
+            Period: DAY
+          Throttle:
+            BurstLimit: 1
+            RateLimit: 1
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -23,6 +49,7 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+            RestApiId: !Ref SmartGarageNotification
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -30,7 +57,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${SmartGarageNotification}.execute-api.${AWS::Region}.amazonaws.com/hello/"
   HelloWorldFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
