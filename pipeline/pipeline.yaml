@@ -1,0 +1,219 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+    Cloudformation template that generates a PreProd and Prod environment CI/CD Pipeline for the Smart-Garage-Notifications Serverless Applications
+
+Parameters:
+  S3BucketName:
+    Description: Name of the S3 bucket where the source code will reside
+    Default: "smart-garage-notifications-sourcecode-experiment"
+    Type: String
+  PipelineName:
+    Description: Name of the pipeline
+    Default: "smart-garage-notifications-pipeline"
+    Type: String
+  RepositoryName:
+    Description: Github Repository Name
+    Default: "husain3/smart-garage-notifications"
+    Type: String
+  CodeBuildName:
+    Description: CodeBuild Build Name
+    Default: "smart-garage-notifications-build"
+    Type: String
+
+Resources:
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${PipelineName}
+      Description: Build pipeline project for the smart-garage-notifications
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: OUTPUT_BUCKET
+            Value: !Sub ${S3BucketName}
+      Cache:
+        Type: S3
+        Location: !Sub ${S3BucketName}/codebuild-cache
+      ServiceRole: !GetAtt CodeBuildStageServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !Sub ${S3BucketName}
+        Type: S3
+      Name: !Sub ${PipelineName}
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: ProjectSourceCodeRepo
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              Configuration:
+                ConnectionArn: !Sub "arn:aws:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/a922f6e6-8a5e-42f3-be87-d1b25caea0f5"
+                FullRepositoryId: !Sub ${RepositoryName}
+                BranchName: master
+                OutputArtifactFormat: "CODE_ZIP"
+              OutputArtifacts:
+                - Name: SourceCodeArtifactZipFile
+        - Name: Build
+          Actions:
+            - Name: CodeBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: SourceCodeArtifactZipFile
+              OutputArtifacts:
+                - Name: BuildArtifactZipFile
+
+  # IAM Capabilities Stage
+
+  CodeBuildStageServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+      Policies:
+        - PolicyName: CodeBuildStageLogPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource:
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildName}"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildName}:*"
+        - PolicyName: CodeBuildStageArtifactsBucketPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -      
+                  Effect: Allow
+                  Action:
+                    - "s3:PutObject"
+                    - "s3:GetObject"
+                    - "s3:GetObjectVersion"
+                    - "s3:GetBucketAcl"
+                    - "s3:GetBucketLocation"
+                  Resource:
+                    - !Sub "arn:aws:s3:::${S3BucketName}/*"
+        - PolicyName: CodeBuildStageReportsGroupPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "codebuild:CreateReportGroup"
+                    - "codebuild:CreateReport"
+                    - "codebuild:UpdateReport"
+                    - "codebuild:BatchPutTestCases"
+                    - "codebuild:BatchPutCodeCoverages"
+                  Resource:
+                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildName}-*"
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+      Policies:
+        - PolicyName: CodePipelineCodeStarConnectionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "codestar-connections:UseConnection"
+                  Resource:
+                    - "*"
+        - PolicyName: CodePipelineLambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "lambda:InvokeFunction"
+                    - "lambda:ListFunctions"
+                  Resource:
+                    - "*"
+        - PolicyName: CodePipelineArtifactsS3BucketPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "s3:*"
+                  Resource:
+                    - !Sub "arn:aws:s3:::${S3BucketName}/*"
+        - PolicyName: CodeBuildAndCloudFormationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "codebuild:BatchGetBuilds"
+                    - "codebuild:StartBuild"
+                    - "codebuild:BatchGetBuildBatches"
+                    - "codebuild:StartBuildBatch"
+                  Resource:
+                    - "*"
+                -
+                  Effect: Allow
+                  Action:
+                    - "cloudformation:CreateStack"
+                    - "cloudformation:DeleteStack"
+                    - "cloudformation:DescribeStacks"
+                    - "cloudformation:UpdateStack"
+                    - "cloudformation:CreateChangeSet"
+                    - "cloudformation:DeleteChangeSet"
+                    - "cloudformation:DescribeChangeSet"
+                    - "cloudformation:ExecuteChangeSet"
+                    - "cloudformation:SetStackPolicy"
+                    - "cloudformation:ValidateTemplate"
+                  Resource:
+                    - "*"
+
+  # Output Stage
+Outputs:
+  CodeBuildStageIAMRole:
+    Value: !GetAtt CodeBuildStageServiceRole.Arn
+  CodePipelineIAMRole:
+    Value: !GetAtt CodePipelineServiceRole.Arn
