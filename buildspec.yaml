@@ -19,7 +19,7 @@ phases:
     on-failure: ABORT
     commands:
       - echo "Starting SAM build phase"
-      - sam package --template-file template.yaml --region us-west-2 --s3-bucket smart-garage-notifications-sourcecode --s3-prefix smart-garage-notifications-sourcecode/lambda-code --output-template-file packaged.yaml
+      - sam package --template-file template.yaml --region us-west-2 --s3-bucket smart-garage-notifications-sourcecode-experiment --s3-prefix smart-garage-notifications-sourcecode/lambda-code --output-template-file packaged.yaml
   post_build:
     on-failure: ABORT
     commands:
