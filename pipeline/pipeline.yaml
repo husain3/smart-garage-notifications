@@ -19,6 +19,14 @@ Parameters:
     Description: CodeBuild Build Name
     Default: "smart-garage-notifications-build"
     Type: String
+  PreProdEnvironment:
+    Description: Pre-production Environment Name
+    Default: "PreProd"
+    Type: String
+  ProdEnvironment:
+    Description: Production Environment Name
+    Default: "Prod"
+    Type: String
 
 Resources:
   CodeBuildProject:
@@ -80,6 +88,24 @@ Resources:
                 - Name: SourceCodeArtifactZipFile
               OutputArtifacts:
                 - Name: BuildArtifactZipFile
+        - Name: !Sub ${PreProdEnvironment}
+          Actions:
+            - Name: ChangeSetCreation
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                StackName: !Sub smart-garage-notifications-stack-experiment
+                ChangeSetName: !Sub smart-garage-notifications-changeset-experiment
+                TemplatePath: BuildArtifactZipFile::packaged.yaml
+                Capabilities: CAPABILITY_IAM
+              InputArtifacts:
+                - Name: BuildArtifactZipFile
+              # RunOrder: 1
+
 
   # IAM Capabilities Stage
 
@@ -210,6 +236,21 @@ Resources:
                     - "cloudformation:ValidateTemplate"
                   Resource:
                     - "*"
+
+  CloudFormationServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
 
   # Output Stage
 Outputs:
