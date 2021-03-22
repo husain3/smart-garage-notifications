@@ -107,8 +107,8 @@ Resources:
                     - "logs:CreateLogStream"
                     - "logs:PutLogEvents"
                   Resource:
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildName}"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildName}:*"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}:*"
         - PolicyName: CodeBuildStageArtifactsBucketPolicy
           PolicyDocument:
             Version: "2012-10-17"
