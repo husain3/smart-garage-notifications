@@ -102,6 +102,7 @@ Resources:
                 ChangeSetName: !Sub smart-garage-notifications-changeset-experiment
                 TemplatePath: BuildArtifactZipFile::packaged.yaml
                 Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
               InputArtifacts:
                 - Name: BuildArtifactZipFile
               # RunOrder: 1
@@ -224,6 +225,7 @@ Resources:
                 -
                   Effect: Allow
                   Action:
+                    - "iam:PassRole"
                     - "cloudformation:CreateStack"
                     - "cloudformation:DeleteStack"
                     - "cloudformation:DescribeStacks"
@@ -237,7 +239,7 @@ Resources:
                   Resource:
                     - "*"
 
-  CloudFormationServiceRole:
+  CloudFormationChangeSetAndExecuteSetServiceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -249,8 +251,20 @@ Resources:
             Principal:
               Service:
                 - cloudformation.amazonaws.com
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+      Policies:
+        - PolicyName: CodeDeploySetsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "cloudformation:CreateChangeSet"
+                    - "cloudformation:DeleteChangeSet"
+                    - "cloudformation:DescribeChangeSet"
+                    - "cloudformation:ExecuteChangeSet"
+                  Resource:
+                    - "*"
 
   # Output Stage
 Outputs:
@@ -258,3 +272,5 @@ Outputs:
     Value: !GetAtt CodeBuildStageServiceRole.Arn
   CodePipelineIAMRole:
     Value: !GetAtt CodePipelineServiceRole.Arn
+  CloudFormationIAMRole:
+    Value: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
