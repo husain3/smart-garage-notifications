@@ -1,15 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >
-    Cloudformation template that generates a PreProd and Prod environment CI/CD Pipeline for the Smart-Garage-Notifications Serverless Applications
+Description: Cloudformation template that generates a PreProd and Prod environment CI/CD Pipeline for the Smart-Garage-Notifications Serverless Applications
 
 Parameters:
-  S3BucketName:
-    Description: Name of the S3 bucket where the source code will reside
-    Default: "smart-garage-notifications-sourcecode-experiment"
-    Type: String
   PipelineName:
     Description: Name of the pipeline
     Default: "smart-garage-notifications-pipeline"
+    Type: String
+  S3BucketName:
+    Description: Name of the S3 bucket where the source code will reside
+    Default: "smart-garage-notifications-sourcecode"
     Type: String
   RepositoryName:
     Description: Github Repository Name
@@ -98,8 +97,8 @@ Resources:
                 Version: "1"
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !Sub smart-garage-notifications-stack-experiment
-                ChangeSetName: !Sub smart-garage-notifications-changeset-experiment
+                StackName: !Sub "smart-garage-notifications-stack-${PreProdEnvironment}"
+                ChangeSetName: !Sub "smart-garage-notifications-changeset-${PreProdEnvironment}"
                 TemplatePath: BuildArtifactZipFile::packaged.yaml
                 Capabilities: CAPABILITY_IAM
                 RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
@@ -114,14 +113,53 @@ Resources:
                 Version: "1"
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !Sub smart-garage-notifications-stack-experiment
-                ChangeSetName: !Sub smart-garage-notifications-changeset-experiment
+                StackName: !Sub "smart-garage-notifications-stack-${PreProdEnvironment}"
+                ChangeSetName: !Sub "smart-garage-notifications-changeset-${PreProdEnvironment}"
                 Capabilities: CAPABILITY_IAM
                 RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
               OutputArtifacts:
-                - Name: Artifact
+                - Name: !Sub "Artifact-${PreProdEnvironment}"
               RunOrder: 2
-
+        - Name: !Sub ${ProdEnvironment}
+          Actions:
+            - Name: DeploymentApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: "1"
+              RunOrder: 1
+            - Name: ChangeSetCreation
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                StackName: !Sub "smart-garage-notifications-stack-${ProdEnvironment}"
+                ChangeSetName: !Sub "smart-garage-notifications-changeset-${ProdEnvironment}"
+                TemplatePath: BuildArtifactZipFile::packaged.yaml
+                Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
+              InputArtifacts:
+                - Name: BuildArtifactZipFile
+              RunOrder: 2
+            - Name: ChangeSetExecute
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                StackName: !Sub "smart-garage-notifications-stack-${ProdEnvironment}"
+                ChangeSetName: !Sub "smart-garage-notifications-changeset-${ProdEnvironment}"
+                Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
+              OutputArtifacts:
+                - Name: !Sub "Artifact-${ProdEnvironment}"
+              RunOrder: 3
 
   # IAM Capabilities Stage
 
@@ -138,19 +176,6 @@ Resources:
               Service:
                 - codebuild.amazonaws.com
       Policies:
-        - PolicyName: CodeBuildStageLogPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-                -
-                  Effect: Allow
-                  Action:
-                    - "logs:CreateLogGroup"
-                    - "logs:CreateLogStream"
-                    - "logs:PutLogEvents"
-                  Resource:
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}"
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}:*"
         - PolicyName: CodeBuildStageArtifactsBucketPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -179,6 +204,19 @@ Resources:
                     - "codebuild:BatchPutCodeCoverages"
                   Resource:
                     - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildName}-*"
+        - PolicyName: CodeBuildStageLogPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource:
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}"
+                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}:*"
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -203,27 +241,6 @@ Resources:
                     - "codestar-connections:UseConnection"
                   Resource:
                     - "*"
-        - PolicyName: CodePipelineLambdaPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-                -
-                  Effect: Allow
-                  Action:
-                    - "lambda:InvokeFunction"
-                    - "lambda:ListFunctions"
-                  Resource:
-                    - "*"
-        - PolicyName: CodePipelineArtifactsS3BucketPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-                -
-                  Effect: Allow
-                  Action:
-                    - "s3:*"
-                  Resource:
-                    - !Sub "arn:aws:s3:::${S3BucketName}/*"
         - PolicyName: CodeBuildAndCloudFormationPolicy
           PolicyDocument:
             Version: "2012-10-17"
@@ -254,6 +271,16 @@ Resources:
                     - "cloudformation:ValidateTemplate"
                   Resource:
                     - "*"
+        - PolicyName: CodePipelineS3BucketArtifactsPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "s3:*"
+                  Resource:
+                    - !Sub "arn:aws:s3:::${S3BucketName}/*"
 
   CloudFormationChangeSetAndExecuteSetServiceRole:
     Type: AWS::IAM::Role
@@ -275,22 +302,19 @@ Resources:
                 -
                   Effect: Allow
                   Action:
-                    - "iam:CreateRole"
-                    - "iam:DeleteRole"
-                    - "iam:AttachRolePolicy"
-                    - "iam:DetachRolePolicy"
-                    - "cloudformation:CreateChangeSet"
-                    - "cloudformation:DeleteChangeSet"
-                    - "cloudformation:DescribeChangeSet"
-                    - "cloudformation:ExecuteChangeSet"
+                    - "iam:*"
+                    - "cloudformation:*"
+                    - "lambda:*"
+                    - "s3:*"
+                    - "apigateway:*"
                   Resource:
                     - "*"
 
-  # Output Stage
+# Output Stage
 Outputs:
   CodeBuildStageIAMRole:
     Value: !GetAtt CodeBuildStageServiceRole.Arn
   CodePipelineIAMRole:
     Value: !GetAtt CodePipelineServiceRole.Arn
-  CloudFormationIAMRole:
+  CloudFormationChangeSetAndExecuteSetServiceIAMRole:
     Value: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
