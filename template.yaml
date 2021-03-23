@@ -20,7 +20,7 @@ Globals:
     Timeout: 3
 
 Resources:
-  SmartGarageNotification:
+  SmartGarageNotificationApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Sub SmartGarageNotificationApi-${ENVIRONMENT}
@@ -37,30 +37,60 @@ Resources:
             BurstLimit: 1
             RateLimit: 1
 
-  HelloWorldFunction:
+  SmartGarageNotificationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: hello_world/
+      CodeUri: send_garage_alert/
       Handler: app.lambda_handler
       Runtime: python3.7
       Events:
         HelloWorld:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /hello
+            Path: /send_garage_alert
             Method: get
-            RestApiId: !Ref SmartGarageNotification
+            RestApiId: !Ref SmartGarageNotificationApi
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: Allow
+                  Action:
+                    - "iam:CreateRole"
+                    - "iam:PutRolePolicy"
+                    - "iam:GetRolePolicy"
+                    - "iam:DeleteRole"
+                    - "iam:DeleteRolePolicy"
+                    - "iam:GetRole"
+                  Resource:
+                    - "*"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
+  SmartGarageNotificationApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${SmartGarageNotification}.execute-api.${AWS::Region}.amazonaws.com/hello/"
-  HelloWorldFunction:
+    Value: !Sub "https://${SmartGarageNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/hello/"
+  SmartGarageNotificationFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
-  # HelloWorldFunctionIamRole:
-  #   Description: "Implicit IAM Role created for Hello World function"
-  #   Value: !GetAtt HelloWorldFunctionRole.Arn
+  SmartGarageNotificationFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt LambdaExecutionRole.Arn
