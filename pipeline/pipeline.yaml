@@ -105,7 +105,22 @@ Resources:
                 RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
               InputArtifacts:
                 - Name: BuildArtifactZipFile
-              # RunOrder: 1
+              RunOrder: 1
+            - Name: ChangeSetExecute
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                StackName: !Sub smart-garage-notifications-stack-experiment
+                ChangeSetName: !Sub smart-garage-notifications-changeset-experiment
+                Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt CloudFormationChangeSetAndExecuteSetServiceRole.Arn
+              OutputArtifacts:
+                - Name: Artifact
+              RunOrder: 2
 
 
   # IAM Capabilities Stage
@@ -225,6 +240,7 @@ Resources:
                 -
                   Effect: Allow
                   Action:
+                    - "iam:GetRole"
                     - "iam:PassRole"
                     - "cloudformation:CreateStack"
                     - "cloudformation:DeleteStack"
@@ -259,6 +275,10 @@ Resources:
                 -
                   Effect: Allow
                   Action:
+                    - "iam:CreateRole"
+                    - "iam:DeleteRole"
+                    - "iam:AttachRolePolicy"
+                    - "iam:DetachRolePolicy"
                     - "cloudformation:CreateChangeSet"
                     - "cloudformation:DeleteChangeSet"
                     - "cloudformation:DescribeChangeSet"
