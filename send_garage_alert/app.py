@@ -34,6 +34,19 @@ def lambda_handler(event, context):
 
     #     raise e
 
+    ssm_client = boto3.client('ssm')
+
+    sns_client = boto3.client('sns')
+
+    #Put name as environment variable
+    ssm_response = ssm_client.get_parameter(
+        Name='arshad-phonenumber',
+        WithDecryption=False
+    )
+
+    print("===========================")
+    print("===========================")
+    print(ssm_response['Parameter']['Value'])
     print("===========================")
     print("===========================")
     print(os.environ["SNSArn"])
