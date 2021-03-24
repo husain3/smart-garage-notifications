@@ -95,11 +95,12 @@ Outputs:
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   SmartGarageNotificationApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${SmartGarageNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/hello/"
+    Description: "API Gateway endpoint URL for Prod stage for Garage Activity function"
+    Value: !Sub "https://${SmartGarageNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/send_garage_alert/"
   SmartGarageNotificationFunction:
-    Description: "Hello World Lambda Function ARN"
+    Description: "Garage ActivityS Lambda Function ARN"
     Value: !GetAtt SmartGarageNotificationFunction.Arn
   GarageActivitySNSTopic:
-    Description: "Hello World Lambda Function ARN"
+    Description: "Garage ActivitySLambda Function ARN"
     Value: !GetAtt GarageActivitySNSTopic.Arn
+

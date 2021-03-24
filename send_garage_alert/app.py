@@ -43,7 +43,7 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200,
         "body": json.dumps({
-            "message": f"SNS Arn =  {os.environ["SNSArn"]}",
+            "message": f"SNS Arn =  {os.environ['SNSArn']}",
             # "location": ip.text.replace("\n", "")
         }),
     }
