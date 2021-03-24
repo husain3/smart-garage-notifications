@@ -43,8 +43,11 @@ Resources:
       CodeUri: send_garage_alert/
       Handler: app.lambda_handler
       Runtime: python3.7
+      Environment:
+        Variables:
+          SNSArn: !GetAtt GarageActivitySNSTopic.arn
       Events:
-        HelloWorld:
+        GarageAlert:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /send_garage_alert
@@ -81,6 +84,12 @@ Resources:
                   Resource:
                     - "*"
 
+  GarageActivitySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: GarageActivityTextMessageNotification
+
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
@@ -90,7 +99,7 @@ Outputs:
     Value: !Sub "https://${SmartGarageNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/hello/"
   SmartGarageNotificationFunction:
     Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  SmartGarageNotificationFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LambdaExecutionRole.Arn
+    Value: !GetAtt SmartGarageNotificationFunction.Arn
+  GarageActivitySNSTopic:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt GarageActivitySNSTopic.Arn
