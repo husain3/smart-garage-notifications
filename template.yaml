@@ -57,7 +57,7 @@ Resources:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /send_garage_alert
-            Method: get
+            Method: post
             RestApiId: !Ref SmartGarageNotificationApi
       Role: !GetAtt LambdaExecutionRole.Arn
 
@@ -81,13 +81,8 @@ Resources:
                 -
                   Effect: Allow
                   Action:
-                    - "iam:CreateRole"
-                    - "iam:PutRolePolicy"
-                    - "iam:GetRolePolicy"
-                    - "iam:DeleteRole"
-                    - "iam:DeleteRolePolicy"
-                    - "iam:GetRole"
                     - "ssm:GetParameter"
+                    - "SNS:Publish"
                   Resource:
                     - "*"
 

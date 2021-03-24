@@ -3,7 +3,6 @@ import boto3
 import os
 # import requests
 
-
 def lambda_handler(event, context):
     """Sample pure Lambda function
 
@@ -33,30 +32,45 @@ def lambda_handler(event, context):
     #     print(e)
 
     #     raise e
-
-    ssm_client = boto3.client('ssm')
-
     sns_client = boto3.client('sns')
 
-    #Put name as environment variable
-    ssm_response = ssm_client.get_parameter(
-        Name='arshad-phonenumber',
-        WithDecryption=False
-    )
-
     print("===========================")
     print("===========================")
-    print(ssm_response['Parameter']['Value'])
+    print(event)
     print("===========================")
     print("===========================")
     print(os.environ["SNSArn"])
     print("===========================")
     print("===========================")
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": f"SNS Arn =  {os.environ['SNSArn']}",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+    # if():
+
+    # elif():
+
+    # elif():
+
+    # else:
+
+    try:
+        sns_client = boto3.client('sns')
+
+        response = sns_client.publish(
+            TopicArn=os.environ["SNSArn"],
+            Message='Turkmenistan! Turkmenistan!',
+            Subject='From the Dear Leader'
+        )
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "message": f"SNS Arn =  {event}",
+                # "location": ip.text.replace("\n", "")
+            }),
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({
+                "message": f"SNS Arn =  {response}",
+                # "location": ip.text.replace("\n", "")
+            }),
+        }
