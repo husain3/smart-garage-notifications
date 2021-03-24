@@ -37,6 +37,12 @@ Resources:
             BurstLimit: 1
             RateLimit: 1
 
+  SmartGarageNotificationLogging:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/SmartGarageNotification-${ENVIRONMENT}
+      RetentionInDays: 14
+
   SmartGarageNotificationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -81,6 +87,7 @@ Resources:
                     - "iam:DeleteRole"
                     - "iam:DeleteRolePolicy"
                     - "iam:GetRole"
+                    - "ssm:GetParameter"
                   Resource:
                     - "*"
 

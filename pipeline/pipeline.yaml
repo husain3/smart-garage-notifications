@@ -308,6 +308,7 @@ Resources:
                     - "s3:*"
                     - "apigateway:*"
                     - "sns:*"
+                    - "logs:*"
                   Resource:
                     - "*"
 
