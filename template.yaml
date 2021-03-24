@@ -31,7 +31,7 @@ Resources:
           CreateUsagePlan: PER_API
           UsagePlanName: SmartGarageNotificationApiUsagePlan
           Quota:
-            Limit: 50
+            Limit: 100
             Period: DAY
           Throttle:
             BurstLimit: 1

@@ -1,7 +1,7 @@
 import json
 import boto3
 import os
-# import requests
+
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -24,45 +24,52 @@ def lambda_handler(event, context):
 
         Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
-
-    # try:
-    #     ip = requests.get("http://checkip.amazonaws.com/")
-    # except requests.RequestException as e:
-    #     # Send some context about this error to Lambda Logs
-    #     print(e)
-
-    #     raise e
     sns_client = boto3.client('sns')
 
-    print("===========================")
-    print("===========================")
-    print(event)
-    print("===========================")
-    print("===========================")
-    print(os.environ["SNSArn"])
-    print("===========================")
-    print("===========================")
-
-    # if():
-
-    # elif():
-
-    # elif():
-
-    # else:
+    if(event['queryStringParameters'] is None):
+        return {
+            "statusCode": 400,
+            "body": json.dumps({
+                "message": json.dumps({"status": "Bad Request Error", "message": "Malformed client request. No params specified. Please provide one door_status, and one open_duration (if applicable) in params"}),
+                # "location": ip.text.replace("\n", "")
+            }),
+        }
 
     try:
         sns_client = boto3.client('sns')
 
-        response = sns_client.publish(
-            TopicArn=os.environ["SNSArn"],
-            Message='Turkmenistan! Turkmenistan!',
-            Subject='From the Dear Leader'
-        )
+        if('door_status' in event['queryStringParameters'].keys() and event['queryStringParameters']['door_status'] == 'opened'):
+            response = sns_client.publish(
+                TopicArn=os.environ["SNSArn"],
+                Message='Garage door is now open',
+                Subject='Door Activity'
+            )
+        elif('door_status' in event['queryStringParameters'].keys() and event['queryStringParameters']['door_status'] == 'closed'):
+            response = sns_client.publish(
+                TopicArn=os.environ["SNSArn"],
+                Message='Garage door is now closed',
+                Subject='Door Activity'
+            )
+        elif(event['queryStringParameters']['door_status'] == 'still_open' and ('open_duration' in event['queryStringParameters'].keys() and event['queryStringParameters']['open_duration'].isnumeric())):
+            response = sns_client.publish(
+                TopicArn=os.environ["SNSArn"],
+                Message=f"Garage door has been open for {event['queryStringParameters']['open_duration']} minutes",
+                Subject='Door Activity'
+            )
+        else:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "message": json.dumps({"status": "Bad Request Error", "message": "Malformed client request. Please provide one door_status, and one open_duration (if applicable) in params"}),
+                    # "location": ip.text.replace("\n", "")
+                }),
+            }
+
         return {
             "statusCode": 200,
             "body": json.dumps({
-                "message": f"SNS Arn =  {event}",
+                # "message": "SNS message published successfully",
+                "message": "SNS message published successfully",
                 # "location": ip.text.replace("\n", "")
             }),
         }
@@ -70,7 +77,6 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "body": json.dumps({
-                "message": f"SNS Arn =  {response}",
-                # "location": ip.text.replace("\n", "")
+                "message": json.dumps({"status": "Lambda Error", "message": f"Lambda error message - {str(e)}"}),
             }),
         }
