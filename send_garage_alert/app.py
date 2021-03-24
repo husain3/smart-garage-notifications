@@ -1,5 +1,6 @@
 import json
-
+import boto3
+import os
 # import requests
 
 
@@ -33,10 +34,16 @@ def lambda_handler(event, context):
 
     #     raise e
 
+    print("===========================")
+    print("===========================")
+    print(os.environ["SNSArn"])
+    print("===========================")
+    print("===========================")
+
     return {
         "statusCode": 200,
         "body": json.dumps({
-            "message": "hello world",
+            "message": f"SNS Arn =  {os.environ["SNSArn"]}",
             # "location": ip.text.replace("\n", "")
         }),
     }
