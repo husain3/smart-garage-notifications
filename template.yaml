@@ -45,7 +45,7 @@ Resources:
       Runtime: python3.7
       Environment:
         Variables:
-          SNSArn: !GetAtt GarageActivitySNSTopic.arn
+          SNSArn: !Ref GarageActivitySNSTopic
       Events:
         GarageAlert:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -100,7 +100,4 @@ Outputs:
   SmartGarageNotificationFunction:
     Description: "Garage ActivityS Lambda Function ARN"
     Value: !GetAtt SmartGarageNotificationFunction.Arn
-  GarageActivitySNSTopic:
-    Description: "Garage ActivitySLambda Function ARN"
-    Value: !GetAtt GarageActivitySNSTopic.Arn
 

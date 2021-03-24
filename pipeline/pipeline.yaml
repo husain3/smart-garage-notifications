@@ -307,6 +307,7 @@ Resources:
                     - "lambda:*"
                     - "s3:*"
                     - "apigateway:*"
+                    - "sns:*"
                   Resource:
                     - "*"
 
