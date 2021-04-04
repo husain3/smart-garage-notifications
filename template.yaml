@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   smart-garage-notifications
 
-  Sample SAM Template for smart-garage-notifications
+  SAM Template for smart-garage-notifications
 
 Parameters:
   ENVIRONMENT:
